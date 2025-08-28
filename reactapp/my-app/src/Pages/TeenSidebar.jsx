@@ -1,4 +1,3 @@
-// src/Components/KidsSidebar.js
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -16,7 +15,7 @@ import {
   FaCrown
 } from "react-icons/fa";
 
-export default function KidsSidebar({ user }) {
+export default function TeenSidebar({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
