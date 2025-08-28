@@ -93,6 +93,7 @@ export default function KidsDashboard() {
     { path: "/kids/rewards", name: "Rewards", icon: <FaAward /> },
     { path: "/kids/progress", name: "Progress", icon: <FaChartLine /> },
     { path: "/kids/profile", name: "Profile", icon: <FaUserCircle /> },
+    { path: "/kids/resources", name: "Resources", icon: <FaBook /> },
      {path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
   ];
 

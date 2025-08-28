@@ -3,7 +3,7 @@
 // import { motion } from "framer-motion";
 // import { useNavigate } from "react-router-dom";
 
-// export default function KidsBadges() {
+// export default function TeenBadges() {
 //   const navigate = useNavigate();
 
 //   // Sample user/gamification data
@@ -41,7 +41,7 @@
 
 //   return (
 //     <div className="min-h-screen p-6 bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-100">
-//       <h1 className="text-4xl font-bold text-purple-800 mb-8 text-center">🏅 Kids Rewards</h1>
+//       <h1 className="text-4xl font-bold text-purple-800 mb-8 text-center">🏅 Teen Rewards</h1>
 
 //       {/* Current Status */}
 //       <div className="max-w-4xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-10 border-2 border-purple-300">
@@ -168,14 +168,15 @@
 //     </div>
 //   );
 // }
-// src/Components/KidsBadges.js
+
+
 import React, { useState } from "react";
 import { FaStar, FaMedal, FaTrophy, FaSmile, FaLock, FaArrowRight, FaCertificate } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import KidsSidebar from "./KidsSidebar"; // Import Sidebar
+import TeenSidebar from "./TeenSidebar"; // <-- Import Sidebar
 
-export default function KidsBadges() {
+export default function TeenBadges() {
   const navigate = useNavigate();
 
   const [gamification, setGamification] = useState({
@@ -195,7 +196,6 @@ export default function KidsBadges() {
   const donationCount = Math.floor(gamification.totalPoints / 1);
   const currentTierIndex = badgeTiers.findIndex((tier) => donationCount < tier.threshold);
   const nextTier = currentTierIndex === -1 ? null : badgeTiers[currentTierIndex];
-  const currentTier = currentTierIndex === 0 ? null : badgeTiers[currentTierIndex - 1];
   const progressTarget = nextTier?.threshold || badgeTiers[badgeTiers.length - 1].threshold;
   const progressPercent = Math.min((donationCount / progressTarget) * 100, 100);
 
@@ -212,12 +212,12 @@ export default function KidsBadges() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#3B1E54] via-[#9B7EBD] via-[#D4BEE4] to-[#EEEEEE]">
-      {/* Sidebar */}
-      <KidsSidebar />
+      {/* Teen Sidebar */}
+      <TeenSidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-6">
-        <h1 className="text-4xl font-bold text-[#3B1E54] mb-8 text-center">🏅 Kids Rewards</h1>
+      <div className="flex-1 p-6 overflow-y-auto">
+        <h1 className="text-4xl font-bold text-[#3B1E54] mb-8 text-center">🏅 Teen Rewards</h1>
 
         {/* Current Status */}
         <div className="max-w-4xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-10 border-2 border-purple-300">
@@ -238,8 +238,8 @@ export default function KidsBadges() {
               <span className="text-sm text-gray-600">{donationCount}/{progressTarget} points</span>
             </div>
             <div className="w-full bg-gray-200 h-4 rounded-full overflow-hidden">
-              <div 
-                className="h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700" 
+              <div
+                className="h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700"
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
@@ -259,15 +259,14 @@ export default function KidsBadges() {
         {/* Badges Section */}
         <div className="max-w-5xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-10 border-2 border-purple-300">
           <h2 className="text-2xl font-bold text-purple-700 mb-6 text-center">Your Badges Collection</h2>
-          
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {badges.map((badge) => (
               <motion.div
                 key={badge.id}
                 whileHover={{ scale: 1.05 }}
                 className={`relative rounded-2xl p-4 flex flex-col items-center transition-all duration-300 ${
-                  badge.unlocked 
-                    ? "bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-300 shadow-md" 
+                  badge.unlocked
+                    ? "bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-300 shadow-md"
                     : "bg-gray-100 border-2 border-gray-200"
                 }`}
               >
@@ -276,19 +275,17 @@ export default function KidsBadges() {
                     <FaLock className="text-white text-2xl" />
                   </div>
                 )}
-                
+
                 <div className={`text-4xl mb-3 ${badge.unlocked ? "opacity-100" : "opacity-40"}`}>
                   {badge.icon}
                 </div>
-                
+
                 <h3 className={`font-bold text-center mb-1 ${badge.unlocked ? "text-purple-800" : "text-gray-500"}`}>
                   {badge.name}
                 </h3>
-                
-                <p className="text-xs text-center text-gray-600">
-                  {badge.description}
-                </p>
-                
+
+                <p className="text-xs text-center text-gray-600">{badge.description}</p>
+
                 {badge.unlocked && (
                   <div className="mt-3 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                     Unlocked!
@@ -302,23 +299,19 @@ export default function KidsBadges() {
         {/* Progress Statistics */}
         <div className="max-w-4xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-10 border-2 border-purple-300">
           <h2 className="text-2xl font-bold text-purple-700 mb-6 text-center">Your Progress</h2>
-          
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-purple-100 p-4 rounded-2xl text-center">
               <div className="text-2xl font-bold text-purple-700">12</div>
               <div className="text-sm text-purple-600">Sessions Completed</div>
             </div>
-            
             <div className="bg-pink-100 p-4 rounded-2xl text-center">
               <div className="text-2xl font-bold text-pink-700">87%</div>
               <div className="text-sm text-pink-600">Average Score</div>
             </div>
-            
             <div className="bg-yellow-100 p-4 rounded-2xl text-center">
               <div className="text-2xl font-bold text-yellow-700">5</div>
               <div className="text-sm text-yellow-600">Streak Days</div>
             </div>
-            
             <div className="bg-green-100 p-4 rounded-2xl text-center">
               <div className="text-2xl font-bold text-green-700">42</div>
               <div className="text-sm text-green-600">Words Mastered</div>
@@ -336,7 +329,6 @@ export default function KidsBadges() {
           >
             <FaArrowRight /> Practice Next Challenge
           </motion.button>
-          
           <p className="text-gray-600 mt-4">
             Earn more badges and unlock achievements by practicing!
           </p>
