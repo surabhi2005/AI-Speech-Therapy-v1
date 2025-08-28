@@ -30,6 +30,7 @@ import DailyScenario from "./Pages/TeenDailyScenario";
 import AdultScenario from "./AdultDailyScenario";
 import KidsReward from "./Pages/KidsReward";
 import AdultProgress from "./Pages/AdultProgress";
+import TeenGames from "./Pages/TeenGames";
 
 export default function App() {
   return (
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/adult/scenario" element={<AdultScenario/>}/>
         <Route path="/kids/rewards" element={<KidsReward/>}/>
         <Route path="/adult/progress" element={<AdultProgress/>}/>
+        <Route path="/teen/games" element={<TeenGames/>}/>
       </Routes>
     </Router>
   );

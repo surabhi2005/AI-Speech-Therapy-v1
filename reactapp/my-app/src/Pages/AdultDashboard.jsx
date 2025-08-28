@@ -315,6 +315,7 @@ export default function AdultDashboard() {
     { path: "/adult/syllable-practice", name: "Syllable Practice", icon: <FaClipboardList /> },
     { path: "/adult/scenario", name: "Daily Scenarios", icon: <FaChalkboardTeacher /> },
     { path: "/adult/progress", name: "Progress", icon: <FaChartLine /> },
+    { path: "/kids/profile", name: "Profile", icon: <FaUserCircle /> },
     {path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
   ];
 

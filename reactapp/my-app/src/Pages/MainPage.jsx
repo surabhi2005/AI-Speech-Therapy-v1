@@ -1,11 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import logo from './photos/icon1.png';
-import heroImg from './photos/photo2.jpg';
-import whyUsImg from './photos/photo3.jpg';
-import featuresImg from './photos/photo4.jpg';
-import faqImg from './photos/photo4.jpg';
-import contactImg from './photos/photo5.jpg';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -15,7 +9,6 @@ export default function Home() {
       {/* Navbar */}
       <nav className="flex justify-between items-center px-8 py-4 bg-[#3B1E54] shadow-md sticky top-0 z-50">
         <div className="flex items-center space-x-3">
-          <img src={logo} alt="VocaCare Logo" className="w-12 h-12 rounded-full border-2 border-white" />
           <h1 className="text-xl font-bold text-[#EEEEEE]">VocaCare</h1>
         </div>
         <div className="hidden md:flex space-x-6 items-center">
@@ -30,7 +23,7 @@ export default function Home() {
       {/* Hero Section */}
       <section
         className="relative h-screen bg-cover bg-center flex items-center justify-center"
-        style={{ backgroundImage: `url(${heroImg})` }}
+        style={{ backgroundImage: `url('https://images.pexels.com/photos/33779/hand-microphone-mic-hold.jpg')` }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-50 z-10" />
         <div className="relative z-20 text-center text-white px-6">
@@ -63,7 +56,7 @@ export default function Home() {
       <section className="py-20 bg-[#EEEEEE]">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center gap-10">
           <motion.img
-            src={whyUsImg}
+            src="https://i.pinimg.com/736x/d5/a2/1c/d5a21cd6b5bab5d72e4d1b932b51b388.jpg"
             alt="Why Choose Us"
             className="md:w-1/2 rounded-xl shadow-lg"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -139,7 +132,7 @@ export default function Home() {
             </details>
           </div>
           <motion.img
-            src={faqImg}
+            src="https://i.pinimg.com/736x/ec/3e/3f/ec3e3fe7f371531c5df5bb62c36f7033.jpg"
             alt="FAQ"
             className="md:w-1/2 rounded-xl shadow-lg"
             initial={{ opacity: 0 }}
@@ -155,7 +148,7 @@ export default function Home() {
     
     {/* Image Side */}
     <motion.img
-      src={contactImg}
+      src="https://i.pinimg.com/736x/e9/57/00/e95700d9ef5a22ce023354485e5a959a.jpg"
       alt="Contact"
       className="md:w-1/2 rounded-xl shadow-lg"
       initial={{ opacity: 0, x: -50 }}

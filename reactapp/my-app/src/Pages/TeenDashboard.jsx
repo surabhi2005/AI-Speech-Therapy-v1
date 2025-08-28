@@ -36,6 +36,7 @@ export default function TeenDashboard() {
     { path: "/teen/games", name: "Pronunciation Games", icon: <FaGamepad /> },
     { path: "/teen/tracker", name: "Confidence Tracker", icon: <FaChartLine /> },
     { path: "/teen/rewards", name: "Rewards", icon: <FaCrown /> },
+    { path: "/kids/profile", name: "Profile", icon: <FaUserCircle /> },
      {path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
   ];
 
