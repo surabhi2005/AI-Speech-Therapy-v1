@@ -8,6 +8,7 @@ import {
   FaDownload,
   FaCopy,
 } from "react-icons/fa";
+import AdultSidebar from "./AdultSidebar";
 
 export default function Filler() {
   const [isRecording, setIsRecording] = useState(false);
@@ -227,7 +228,9 @@ export default function Filler() {
   const fullTranscript = [transcript, interim].filter(Boolean).join(" ").trim();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#EEEEEE] to-[#D4BEE4] text-[#3B1E54] p-6">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#EEEEEE] to-[#D4BEE4] text-[#3B1E54]">
+      <AdultSidebar />
+      <div className="flex-1 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-md p-6 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -356,6 +359,7 @@ export default function Filler() {
             </div>
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

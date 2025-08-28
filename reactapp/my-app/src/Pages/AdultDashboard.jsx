@@ -294,7 +294,8 @@ import {
   FaBookOpen,
   FaMedal,
   FaTrophy,
-  FaRobot
+  FaRobot,
+  FaBook
 } from "react-icons/fa";
 
 export default function AdultDashboard() {
@@ -315,7 +316,8 @@ export default function AdultDashboard() {
     { path: "/adult/syllable-practice", name: "Syllable Practice", icon: <FaClipboardList /> },
     { path: "/adult/scenario", name: "Daily Scenarios", icon: <FaChalkboardTeacher /> },
     { path: "/adult/progress", name: "Progress", icon: <FaChartLine /> },
-    { path: "/kids/profile", name: "Profile", icon: <FaUserCircle /> },
+    { path: "/adult/profile", name: "Profile", icon: <FaUserCircle /> },
+     { path: "/adult/resources", name: "Resources", icon: <FaBook /> },
     {path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
   ];
 

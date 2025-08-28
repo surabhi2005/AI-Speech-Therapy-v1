@@ -7,7 +7,7 @@
 //   LineChart, Line, PieChart, Pie, Cell, CartesianGrid, AreaChart, Area
 // } from "recharts";
 
-// export default function AdultProgress() {
+// export default function TeenProgress() {
 //   const [timeRange, setTimeRange] = useState("monthly");
 
 //   const progressData = [
@@ -41,7 +41,7 @@
 //     <div className="min-h-screen p-6" style={{ backgroundColor: "#EEEEEE" }}>
 //       <div className="max-w-6xl mx-auto p-8 rounded-3xl shadow-xl border" style={{ backgroundColor: "#D4BEE4", borderColor: "#9B7EBD" }}>
 //         <h1 className="text-3xl font-bold mb-8 flex items-center" style={{ color: "#3B1E54" }}>
-//           <FaChartLine className="mr-3" style={{ color: "#9B7EBD" }} /> Adult Progress Overview
+//           <FaChartLine className="mr-3" style={{ color: "#9B7EBD" }} /> Teen Progress Overview
 //         </h1>
 
 //         {/* Time Range Selector */}
@@ -190,16 +190,16 @@
 //   );
 // }
 import React, { useState } from "react";
-import {
+import TeenSidebar from "./TeenSidebar"; // Import the existing sidebar
+import { 
   FaChartLine, FaCheckCircle, FaTimesCircle, FaBriefcase
 } from "react-icons/fa";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar,
   LineChart, Line, PieChart, Pie, Cell, CartesianGrid
 } from "recharts";
-import AdultSidebar from "./AdultSidebar";
 
-export default function AdultProgress() {
+export default function TeenProgress() {
   const [timeRange, setTimeRange] = useState("monthly");
 
   const progressData = [
@@ -226,15 +226,19 @@ export default function AdultProgress() {
   ];
 
   const COLORS = ['#3B1E54', '#9B7EBD', '#D4BEE4', '#9B7EBD'];
+
   const overallScore = Math.round(progressData.reduce((sum, item) => sum + item.progress, 0) / progressData.length);
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "#EEEEEE" }}>
-      <AdultSidebar />
+      {/* Sidebar */}
+      <TeenSidebar />
+
+      {/* Main Content */}
       <div className="flex-1 p-6">
         <div className="max-w-6xl mx-auto p-8 rounded-3xl shadow-xl border" style={{ backgroundColor: "#D4BEE4", borderColor: "#9B7EBD" }}>
           <h1 className="text-3xl font-bold mb-8 flex items-center" style={{ color: "#3B1E54" }}>
-            <FaChartLine className="mr-3" style={{ color: "#9B7EBD" }} /> Adult Progress Overview
+            <FaChartLine className="mr-3" style={{ color: "#9B7EBD" }} /> Teen Progress Overview
           </h1>
 
           {/* Time Range Selector */}
@@ -243,7 +247,7 @@ export default function AdultProgress() {
               {["weekly", "monthly", "quarterly"].map(period => (
                 <button
                   key={period}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors`}
+                  className="px-3 py-1 rounded-md text-sm font-medium transition-colors"
                   onClick={() => setTimeRange(period)}
                   style={{
                     backgroundColor: timeRange === period ? "#3B1E54" : "#EEEEEE",
@@ -265,8 +269,8 @@ export default function AdultProgress() {
               <div className="w-full h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadialBarChart
-                    cx="50%" cy="50%" innerRadius="60%" outerRadius="100%"
-                    data={[{ name: "Score", value: overallScore, fill: "#9B7EBD" }]}
+                    cx="50%" cy="50%" innerRadius="60%" outerRadius="100%" 
+                    data={[{ name: "Score", value: overallScore, fill: "#9B7EBD" }]} 
                     startAngle={180} endAngle={0}
                   >
                     <RadialBar minAngle={15} background clockWise dataKey="value" cornerRadius={10} />
@@ -284,7 +288,7 @@ export default function AdultProgress() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#9B7EBD" opacity={0.3} />
                   <XAxis dataKey="week" stroke="#3B1E54" />
                   <YAxis stroke="#3B1E54" domain={[0, 100]} />
-                  <Tooltip
+                  <Tooltip 
                     contentStyle={{ backgroundColor: "#D4BEE4", borderRadius: "10px", border: "none" }}
                     itemStyle={{ color: "#3B1E54" }}
                   />
@@ -305,15 +309,15 @@ export default function AdultProgress() {
                 <BarChart data={progressData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                   <XAxis type="number" domain={[0, 100]} hide />
                   <YAxis type="category" dataKey="metric" width={180} tick={{ fill: "#3B1E54", fontSize: 14 }} />
-                  <Tooltip
+                  <Tooltip 
                     contentStyle={{ backgroundColor: "#D4BEE4", borderRadius: "10px", border: "none" }}
                     itemStyle={{ color: "#3B1E54" }}
                   />
-                  <Bar
-                    dataKey="progress"
-                    fill="#9B7EBD"
-                    background={{ fill: "#D4BEE4" }}
-                    radius={[10, 10, 10, 10]}
+                  <Bar 
+                    dataKey="progress" 
+                    fill="#9B7EBD" 
+                    background={{ fill: "#D4BEE4" }} 
+                    radius={[10, 10, 10, 10]} 
                     label={{ position: "right", fill: "#3B1E54", fontWeight: "bold" }}
                   />
                 </BarChart>
@@ -339,7 +343,7 @@ export default function AdultProgress() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip
+                  <Tooltip 
                     contentStyle={{ backgroundColor: "#D4BEE4", borderRadius: "10px", border: "none" }}
                     itemStyle={{ color: "#3B1E54" }}
                   />

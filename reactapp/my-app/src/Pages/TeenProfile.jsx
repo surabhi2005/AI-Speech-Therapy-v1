@@ -1,7 +1,7 @@
 // import React, { useState } from "react";
 // import { FaEdit, FaTrophy, FaChartLine, FaUserCog, FaBell, FaLock } from "react-icons/fa";
 
-// export default function Profile() {
+// export default function TeenProfile() {
 //   const [user, setUser] = useState(
 //     JSON.parse(localStorage.getItem("user")) || {
 //       name: "John Doe",
@@ -235,11 +235,13 @@
 //     </div>
 //   );
 // }
+
+
 import React, { useState } from "react";
 import { FaEdit, FaTrophy, FaChartLine, FaUserCog, FaBell, FaLock } from "react-icons/fa";
-import KidsSidebar from "./KidsSidebar"; // <-- Import Sidebar
+import TeenSidebar from "./TeenSidebar"; // Import the sidebar
 
-export default function Profile() {
+export default function TeenProfile() {
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user")) || {
       name: "John Doe",
@@ -286,8 +288,8 @@ export default function Profile() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-[#EEEEEE] to-[#D4BEE4]">
-      {/* Kids Sidebar */}
-      <KidsSidebar />
+      {/* Teen Sidebar */}
+      <TeenSidebar />
 
       {/* Main Content */}
       <div className="flex-1 p-6">
@@ -366,11 +368,15 @@ export default function Profile() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#3B1E54] font-medium">Member since:</span>
-                        <span className="text-[#9B7EBD]">{new Date(user.joinDate).toLocaleDateString()}</span>
+                        <span className="text-[#9B7EBD]">
+                          {new Date(user.joinDate).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#3B1E54] font-medium">Last active:</span>
-                        <span className="text-[#9B7EBD]">{new Date(user.lastActive).toLocaleDateString()}</span>
+                        <span className="text-[#9B7EBD]">
+                          {new Date(user.lastActive).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                     <button
@@ -399,7 +405,8 @@ export default function Profile() {
                 ].map((stat, idx) => (
                   <div key={idx} className="bg-[#EEEEEE] p-4 rounded-lg text-center">
                     <div className="text-3xl font-bold text-[#3B1E54]">
-                      {stat.value}{stat.showBar ? "%" : ""}
+                      {stat.value}
+                      {stat.showBar ? "%" : ""}
                     </div>
                     <div className="text-[#9B7EBD]">{stat.label}</div>
                     {stat.showBar && (
@@ -439,9 +446,7 @@ export default function Profile() {
                         achievement.earned ? "text-green-600" : "text-gray-500"
                       }`}
                     >
-                      {achievement.earned
-                        ? "Earned on Jan 12, 2024"
-                        : "Not yet earned"}
+                      {achievement.earned ? "Earned on Jan 12, 2024" : "Not yet earned"}
                     </div>
                   </div>
                 ))}
