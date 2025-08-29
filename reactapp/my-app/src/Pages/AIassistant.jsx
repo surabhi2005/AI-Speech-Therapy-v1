@@ -1,6 +1,7 @@
-// src/Pages/AIassistant.jsx
 import React, { useState, useRef, useEffect } from "react";
-import { FaMicrophone, FaStop, FaRobot, FaUser, FaVolumeUp, FaArrowRight } from "react-icons/fa";
+import { FaMicrophone, FaStop, FaRobot, FaUser, FaVolumeUp, FaArrowRight,FaArrowLeft } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+
 
 /*
   === EDIT MARKER START ===
@@ -13,6 +14,7 @@ import { FaMicrophone, FaStop, FaRobot, FaUser, FaVolumeUp, FaArrowRight } from 
 */
 
 export default function AIassistant() {
+  const navigate = useNavigate();
   const [isRecording, setIsRecording] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -579,16 +581,23 @@ export default function AIassistant() {
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col h-[85vh]">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#3B1E54] to-[#9B7EBD] text-white p-5 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mr-3">
-              <FaRobot className="text-[#3B1E54] text-xl" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Pronunciation Coach</h1>
-              <p className="text-[#D4BEE4]">Practice and improve your speaking skills</p>
-            </div>
-          </div>
-        </div>
+  <div className="flex items-center space-x-3">
+    <button
+      onClick={() => navigate(-1)}
+      className="p-2 rounded-full bg-white text-[#3B1E54] hover:bg-gray-200 transition"
+    >
+      <FaArrowLeft />
+    </button>
+    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
+      <FaRobot className="text-[#3B1E54] text-xl" />
+    </div>
+    <div>
+      <h1 className="text-2xl font-bold">Pronunciation Coach</h1>
+      <p className="text-[#D4BEE4]">Practice and improve your speaking skills</p>
+    </div>
+  </div>
+</div>
+
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
