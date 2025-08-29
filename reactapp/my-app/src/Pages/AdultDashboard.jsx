@@ -4,7 +4,6 @@ import {
   FaCommentDots,
   FaVolumeUp,
   FaSmile,
-  FaChartBar,
   FaClipboardList,
   FaChalkboardTeacher,
   FaSignOutAlt,
@@ -12,7 +11,6 @@ import {
   FaBars,
   FaTimes,
   FaHome,
-  FaFileAlt,
   FaChartLine,
   FaCalendar,
   FaBullseye,
@@ -35,11 +33,23 @@ export default function AdultDashboard() {
 
   const menuItems = [
     { path: "/dashboard/adult", name: "Dashboard", icon: <FaHome /> },
-    { path: "/adult/filler", name: "Filler Word Detection", icon: <FaCommentDots /> },
+    {
+      path: "/adult/filler",
+      name: "Filler Word Detection",
+      icon: <FaCommentDots />,
+    },
     { path: "/adult/stutter", name: "Stutter Support", icon: <FaVolumeUp /> },
     { path: "/adult/emotion", name: "Emotion Feedback", icon: <FaSmile /> },
-    { path: "/adult/syllable-practice", name: "Syllable Practice", icon: <FaClipboardList /> },
-    { path: "/adult/scenario", name: "Daily Scenarios", icon: <FaChalkboardTeacher /> },
+    {
+      path: "/adult/syllable-practice",
+      name: "Syllable Practice",
+      icon: <FaClipboardList />,
+    },
+    {
+      path: "/adult/scenario",
+      name: "Daily Scenarios",
+      icon: <FaChalkboardTeacher />,
+    },
     { path: "/adult/progress", name: "Progress", icon: <FaChartLine /> },
     { path: "/adult/profile", name: "Profile", icon: <FaUserCircle /> },
      { path: "/adult/resources", name: "Resources", icon: <FaBook /> },
@@ -64,25 +74,37 @@ export default function AdultDashboard() {
 
   // Recent achievements
   const achievements = [
-    { title: "Filler Word Reduction", description: "Reduced 'um' usage by 40%", icon: <FaCommentDots /> },
-    { title: "Consistency Champion", description: "Practiced 5 days in a row", icon: <FaCalendar /> },
-    { title: "Pronunciation Master", description: "Mastered 5 difficult phonemes", icon: <FaBullseye /> },
+    {
+      title: "Filler Word Reduction",
+      description: "Reduced 'um' usage by 40%",
+      icon: <FaCommentDots />,
+    },
+    {
+      title: "Consistency Champion",
+      description: "Practiced 5 days in a row",
+      icon: <FaCalendar />,
+    },
+    {
+      title: "Pronunciation Master",
+      description: "Mastered 5 difficult phonemes",
+      icon: <FaBullseye />,
+    },
   ];
 
   // Motivational quotes for adults
   const motivationalQuotes = [
     {
       text: "Clear communication is not about perfection, but about connection.",
-      author: "Communication Expert"
+      author: "Communication Expert",
     },
     {
       text: "Every word you speak clearly is a step toward confidence.",
-      author: "Speech Coach"
+      author: "Speech Coach",
     },
     {
       text: "Progress in speech is like building a muscle - consistency creates strength.",
-      author: "Therapist"
-    }
+      author: "Therapist",
+    },
   ];
 
   return (
@@ -98,7 +120,9 @@ export default function AdultDashboard() {
             <span className="text-[#EEEEEE]">Voca</span>
             <span className="text-[#D4BEE4]">Care</span>
           </h1>
-          <p className="text-sm text-[#D4BEE4] mt-1">Speech Therapy for Adults</p>
+          <p className="text-sm text-[#D4BEE4] mt-1">
+            Speech Therapy for Adults
+          </p>
         </div>
 
         <nav className="mt-6">
@@ -167,13 +191,16 @@ export default function AdultDashboard() {
                   Welcome back, {user.name}!
                 </h2>
                 <p className="text-lg text-[#9B7EBD] mb-4">
-                  Your journey to clearer communication continues. Let's make today productive.
+                  Your journey to clearer communication continues. Let's make
+                  today productive.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                   <div className="bg-[#EEEEEE] p-4 rounded-lg text-center">
                     <div className="text-2xl font-bold text-[#3B1E54]">15</div>
-                    <div className="text-sm text-[#9B7EBD]">Sessions Completed</div>
+                    <div className="text-sm text-[#9B7EBD]">
+                      Sessions Completed
+                    </div>
                   </div>
                   <div className="bg-[#EEEEEE] p-4 rounded-lg text-center">
                     <div className="text-2xl font-bold text-[#3B1E54]">92%</div>
@@ -188,7 +215,9 @@ export default function AdultDashboard() {
 
               {/* Weekly Progress */}
               <div className="bg-[#EEEEEE] p-5 rounded-lg shadow-inner lg:max-w-md w-full">
-                <h3 className="text-lg font-semibold text-[#3B1E54] mb-4 text-center">Weekly Progress</h3>
+                <h3 className="text-lg font-semibold text-[#3B1E54] mb-4 text-center">
+                  Weekly Progress
+                </h3>
                 <div className="flex items-end justify-between h-32">
                   {weeklyProgress.map((day, index) => (
                     <div key={index} className="flex flex-col items-center">
@@ -196,7 +225,9 @@ export default function AdultDashboard() {
                         className="w-8 bg-[#3B1E54] rounded-t transition-all hover:bg-[#9B7EBD]"
                         style={{ height: `${day.value}%` }}
                       ></div>
-                      <span className="text-sm text-[#3B1E54] mt-2">{day.day}</span>
+                      <span className="text-sm text-[#3B1E54] mt-2">
+                        {day.day}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -224,13 +255,20 @@ export default function AdultDashboard() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {achievements.map((achievement, index) => (
-                <div key={index} className="bg-[#EEEEEE] p-4 rounded-lg flex items-start">
+                <div
+                  key={index}
+                  className="bg-[#EEEEEE] p-4 rounded-lg flex items-start"
+                >
                   <div className="bg-[#3B1E54] p-2 rounded-full mr-3 text-white">
                     {achievement.icon}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-[#3B1E54]">{achievement.title}</h4>
-                    <p className="text-sm text-[#9B7EBD]">{achievement.description}</p>
+                    <h4 className="font-semibold text-[#3B1E54]">
+                      {achievement.title}
+                    </h4>
+                    <p className="text-sm text-[#9B7EBD]">
+                      {achievement.description}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -241,14 +279,18 @@ export default function AdultDashboard() {
         {/* Recommended Activities */}
         <section className="p-6">
           <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-2xl font-bold text-[#3B1E54] mb-6">Recommended Activities</h2>
+            <h2 className="text-2xl font-bold text-[#3B1E54] mb-6">
+              Recommended Activities
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-[#EEEEEE] p-5 rounded-lg">
                 <h3 className="text-xl font-semibold text-[#3B1E54] mb-3 flex items-center">
-                  <FaBookOpen className="mr-2 text-[#9B7EBD]" /> Daily Pronunciation
+                  <FaBookOpen className="mr-2 text-[#9B7EBD]" /> Daily
+                  Pronunciation
                 </h3>
                 <p className="text-[#9B7EBD] mb-4">
-                  Practice the phonemes you've been working on. Today's focus: "th" sounds.
+                  Practice the phonemes you've been working on. Today's focus:
+                  "th" sounds.
                 </p>
                 <button className="px-4 py-2 bg-[#3B1E54] text-white rounded-lg hover:bg-[#9B7EBD]">
                   Start Practice
@@ -260,7 +302,8 @@ export default function AdultDashboard() {
                   <FaMedal className="mr-2 text-[#9B7EBD]" /> Challenge Exercise
                 </h3>
                 <p className="text-[#9B7EBD] mb-4">
-                  Try our new workplace meeting simulation to practice professional communication.
+                  Try our new workplace meeting simulation to practice
+                  professional communication.
                 </p>
                 <button className="px-4 py-2 bg-[#3B1E54] text-white rounded-lg hover:bg-[#9B7EBD]">
                   Take Challenge
