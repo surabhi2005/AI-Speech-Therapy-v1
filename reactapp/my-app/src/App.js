@@ -17,7 +17,6 @@ import Storytelling from "./Pages/StoryTelling";
 
 // Common Pages
 import Profile from "./Pages/Profile";
-import Report from "./Pages/Report";
 import Progress from "./Pages/Progress";
 import AIassistant from "./Pages/AIassistant";
 import SpeechGames from "./Pages/SpeechGames";
@@ -27,10 +26,17 @@ import EmotionalFeedback from "./Pages/EmotionalFeedback";
 import TeenStorytelling from "./Pages/TeenStoryTelling";
 import Syllable from "./Pages/Syllable";
 import DailyScenario from "./Pages/TeenDailyScenario";
-import AdultScenario from "./AdultDailyScenario";
+import AdultScenario from "./Pages/AdultDailyScenario";
 import KidsReward from "./Pages/KidsReward";
 import AdultProgress from "./Pages/AdultProgress";
 import TeenGames from "./Pages/TeenGames";
+import TeenProgress from "./Pages/TeenProgress";
+import KidsResources from "./Pages/KidsResources";
+import TeenResources from "./Pages/TeenResources";
+import AdultResources from "./Pages/AdultResources";
+import AdultProfile from "./Pages/AdultProfile";
+import TeenBadges from "./Pages/TeenRewards";
+import TeenProfile from "./Pages/TeenProfile";
 
 export default function App() {
   return (
@@ -46,7 +52,6 @@ export default function App() {
         <Route path="/dashboard/adult" element={<AdultDashboard />} />
         <Route path="/kids/storytelling" element={<Storytelling />} />
         <Route path="/kids/profile" element={<Profile />} />
-        <Route path="/kids/report" element={<Report />} />
         <Route path="/kids/progress" element={<Progress />} />
         <Route path="/kids/games" element={<SpeechGames/>}/>
         <Route path="/adult/filler" element={<Filler/>}/>
@@ -59,6 +64,13 @@ export default function App() {
         <Route path="/kids/rewards" element={<KidsReward/>}/>
         <Route path="/adult/progress" element={<AdultProgress/>}/>
         <Route path="/teen/games" element={<TeenGames/>}/>
+        <Route path="/teen/progress" element={<TeenProgress/>}/>
+        <Route path="/kids/resources" element={<KidsResources/>}/>
+        <Route path="/teen/resources" element={<TeenResources/>}/>
+         <Route path="/adult/resources" element={<AdultResources/>}/>
+         <Route path="/adult/profile" element={<AdultProfile/>}/>
+         <Route path="/teen/rewards" element={<TeenBadges/>}/>
+         <Route path="/teen/profile" element={<TeenProfile/>}/>
       </Routes>
     </Router>
   );

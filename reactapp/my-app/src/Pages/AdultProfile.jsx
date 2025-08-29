@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { FaEdit, FaTrophy, FaChartLine, FaUserCog, FaBell, FaLock } from "react-icons/fa";
-import KidsSidebar from "./KidsSidebar"; // <-- Import Sidebar
+import AdultSidebar from "./AdultSidebar";
 
-export default function Profile() {
+export default function AdultProfile() {
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user")) || {
       name: "John Doe",
@@ -49,8 +49,8 @@ export default function Profile() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-[#EEEEEE] to-[#D4BEE4]">
-      {/* Kids Sidebar */}
-      <KidsSidebar />
+      {/* Sidebar */}
+      <AdultSidebar />
 
       {/* Main Content */}
       <div className="flex-1 p-6">
@@ -202,9 +202,7 @@ export default function Profile() {
                         achievement.earned ? "text-green-600" : "text-gray-500"
                       }`}
                     >
-                      {achievement.earned
-                        ? "Earned on Jan 12, 2024"
-                        : "Not yet earned"}
+                      {achievement.earned ? "Earned on Jan 12, 2024" : "Not yet earned"}
                     </div>
                   </div>
                 ))}

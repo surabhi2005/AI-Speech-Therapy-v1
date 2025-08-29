@@ -34,9 +34,10 @@ export default function TeenDashboard() {
     { path: "/teen/storytelling", name: "Storytelling", icon: <FaBook /> },
     { path: "/teen/scenario", name: "Daily Scenario", icon: <FaUserFriends /> },
     { path: "/teen/games", name: "Pronunciation Games", icon: <FaGamepad /> },
-    { path: "/teen/tracker", name: "Confidence Tracker", icon: <FaChartLine /> },
+    { path: "/teen/progress", name: "Progress", icon: <FaChartLine /> },
     { path: "/teen/rewards", name: "Rewards", icon: <FaCrown /> },
-    { path: "/kids/profile", name: "Profile", icon: <FaUserCircle /> },
+    { path: "/teen/profile", name: "Profile", icon: <FaUserCircle /> },
+     { path: "/teen/resources", name: "Resources", icon: <FaBook /> },
      {path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
   ];
 
