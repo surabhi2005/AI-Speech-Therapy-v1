@@ -18,7 +18,7 @@ import {
   FaMedal,
   FaTrophy,
   FaRobot,
-  FaBook
+  FaBook,
 } from "react-icons/fa";
 
 export default function AdultDashboard() {
@@ -52,8 +52,8 @@ export default function AdultDashboard() {
     },
     { path: "/adult/progress", name: "Progress", icon: <FaChartLine /> },
     { path: "/adult/profile", name: "Profile", icon: <FaUserCircle /> },
-     { path: "/adult/resources", name: "Resources", icon: <FaBook /> },
-    {path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
+    { path: "/adult/resources", name: "Resources", icon: <FaBook /> },
+    { path: "/ai-assistant", name: "AI Assistant", icon: <FaRobot /> },
   ];
 
   const handleLogout = () => {

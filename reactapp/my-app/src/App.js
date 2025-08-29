@@ -38,39 +38,233 @@ import AdultProfile from "./Pages/AdultProfile";
 import TeenBadges from "./Pages/TeenRewards";
 import TeenProfile from "./Pages/TeenProfile";
 
+// Protected Route wrapper
+import ProtectedRoute from "./Pages/ProtectedRoute";
+
 export default function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<MainPage />} />
-        <Route path="/ai-assistant" element={<AIassistant/>}/>
-        <Route path="/3d-model" element={<D3DModel />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard/kids" element={<KidsDashboard />} />
-        <Route path="/dashboard/teen" element={<TeenDashboard />} />
-        <Route path="/dashboard/adult" element={<AdultDashboard />} />
-        <Route path="/kids/storytelling" element={<Storytelling />} />
-        <Route path="/kids/profile" element={<Profile />} />
-        <Route path="/kids/progress" element={<Progress />} />
-        <Route path="/kids/games" element={<SpeechGames/>}/>
-        <Route path="/adult/filler" element={<Filler/>}/>
-        <Route path="/adult/stutter" element={<Stutter/>}/>
-        <Route path="/adult/emotion" element={<EmotionalFeedback/>}/>
-        <Route path="/teen/storytelling" element={<TeenStorytelling/>}/>
-        <Route path="/adult/syllable-practice" element={<Syllable/>}/>
-        <Route path="/teen/scenario" element={<DailyScenario/>}/>
-        <Route path="/adult/scenario" element={<AdultScenario/>}/>
-        <Route path="/kids/rewards" element={<KidsReward/>}/>
-        <Route path="/adult/progress" element={<AdultProgress/>}/>
-        <Route path="/teen/games" element={<TeenGames/>}/>
-        <Route path="/teen/progress" element={<TeenProgress/>}/>
-        <Route path="/kids/resources" element={<KidsResources/>}/>
-        <Route path="/teen/resources" element={<TeenResources/>}/>
-         <Route path="/adult/resources" element={<AdultResources/>}/>
-         <Route path="/adult/profile" element={<AdultProfile/>}/>
-         <Route path="/teen/rewards" element={<TeenBadges/>}/>
-         <Route path="/teen/profile" element={<TeenProfile/>}/>
+
+        {/* Protected Routes */}
+        <Route
+          path="/ai-assistant"
+          element={
+            <ProtectedRoute>
+              <AIassistant />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/3d-model"
+          element={
+            <ProtectedRoute>
+              <D3DModel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/kids"
+          element={
+            <ProtectedRoute>
+              <KidsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/teen"
+          element={
+            <ProtectedRoute>
+              <TeenDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/adult"
+          element={
+            <ProtectedRoute>
+              <AdultDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Kids Features */}
+        <Route
+          path="/kids/storytelling"
+          element={
+            <ProtectedRoute>
+              <Storytelling />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kids/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kids/progress"
+          element={
+            <ProtectedRoute>
+              <Progress />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kids/games"
+          element={
+            <ProtectedRoute>
+              <SpeechGames />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kids/rewards"
+          element={
+            <ProtectedRoute>
+              <KidsReward />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kids/resources"
+          element={
+            <ProtectedRoute>
+              <KidsResources />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Teen Features */}
+        <Route
+          path="/teen/storytelling"
+          element={
+            <ProtectedRoute>
+              <TeenStorytelling />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teen/scenario"
+          element={
+            <ProtectedRoute>
+              <DailyScenario />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teen/games"
+          element={
+            <ProtectedRoute>
+              <TeenGames />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teen/progress"
+          element={
+            <ProtectedRoute>
+              <TeenProgress />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teen/resources"
+          element={
+            <ProtectedRoute>
+              <TeenResources />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teen/rewards"
+          element={
+            <ProtectedRoute>
+              <TeenBadges />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teen/profile"
+          element={
+            <ProtectedRoute>
+              <TeenProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Adult Features */}
+        <Route
+          path="/adult/filler"
+          element={
+            <ProtectedRoute>
+              <Filler />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/stutter"
+          element={
+            <ProtectedRoute>
+              <Stutter />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/emotion"
+          element={
+            <ProtectedRoute>
+              <EmotionalFeedback />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/syllable-practice"
+          element={
+            <ProtectedRoute>
+              <Syllable />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/scenario"
+          element={
+            <ProtectedRoute>
+              <AdultScenario />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/progress"
+          element={
+            <ProtectedRoute>
+              <AdultProgress />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/resources"
+          element={
+            <ProtectedRoute>
+              <AdultResources />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adult/profile"
+          element={
+            <ProtectedRoute>
+              <AdultProfile />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );
