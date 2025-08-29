@@ -164,4 +164,3 @@ async def feedback(req: FeedbackRequest):
 @app.get("/")
 async def root():
     return {"status": "ok", "note": "SpeechTherapy ML API"}
-
