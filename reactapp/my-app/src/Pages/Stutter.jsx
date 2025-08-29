@@ -7,6 +7,7 @@ import {
   FaLightbulb,
   FaDownload,
 } from "react-icons/fa";
+import AdultSidebar from "./AdultSidebar";
 
 /**
  * KidsDashboard.jsx - Stutter Detection & Support
@@ -279,7 +280,9 @@ export default function Stutter() {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "#EEEEEE", color: "#3B1E54" }}>
+    <div className="flex min-h-screen" style={{ background: "#EEEEEE", color: "#3B1E54" }}>
+      <AdultSidebar/>
+      <div className="flex-1 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow p-6 mb-6 flex items-start justify-between gap-4">
@@ -475,6 +478,7 @@ export default function Stutter() {
             </div>
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaMicrophone, FaStop, FaSmile, FaLaugh, FaMeh, FaTired, FaVolumeUp } from "react-icons/fa";
+import AdultSidebar from "./AdultSidebar";
 
 const EmotionalFeedback = () => {
   const [recording, setRecording] = useState(false);
@@ -52,7 +53,9 @@ const EmotionalFeedback = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 flex items-center justify-center" style={{ backgroundColor: "#EEEEEE" }}>
+    <div className="flex min-h-screen" style={{ backgroundColor: "#EEEEEE" }}>
+      <AdultSidebar/>
+      <div className="flex-1 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="p-6 text-center" style={{ backgroundColor: "#3B1E54" }}>
@@ -162,6 +165,7 @@ const EmotionalFeedback = () => {
           <p>Keep practicing to become an emotion detection expert! 🌟</p>
         </div>
       </div>
+    </div>
     </div>
   );
 };
