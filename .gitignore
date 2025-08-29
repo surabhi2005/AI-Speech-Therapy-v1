@@ -1,0 +1,18 @@
+# ---- Global ignores ----
+*.log
+*.pyc
+__pycache__/
+.DS_Store
+
+# ---- Python backend (speech_therapy_ml) ----
+/speech_therapy_ml/venv/
+/speech_therapy_ml/.env
+/speech_therapy_ml/__pycache__/
+/speech_therapy_ml/*.sqlite3
+/speech_therapy_ml/.pytest_cache/
+/speech_therapy_ml/*.pkl
+/speech_therapy_ml/*.joblib
+/speech_therapy_ml/models/*
+
+# ---- Node / React handled separately ----
+# Leave reactapp/my-app/.gitignore intact
