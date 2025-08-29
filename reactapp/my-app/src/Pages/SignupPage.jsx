@@ -1,65 +1,51 @@
-// import React from "react";
-
-// export default function SignupPage() {
-//   return (
-//     <div className="w-screen min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50">
-//       <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-md">
-//         <h2 className="text-3xl font-bold text-teal-700 text-center mb-6">Sign Up</h2>
-//         <form className="space-y-5">
-//           <input
-//             type="text"
-//             placeholder="Full Name"
-//             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-400"
-//           />
-//           <input
-//             type="email"
-//             placeholder="Email"
-//             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-400"
-//           />
-//           <input
-//             type="password"
-//             placeholder="Password"
-//             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-400"
-//           />
-//           <input
-//             type="password"
-//             placeholder="Confirm Password"
-//             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-400"
-//           />
-
-//           {/* Role Selection */}
-//           <select
-//             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-400"
-//             defaultValue=""
-//           >
-//             <option value="" disabled>
-//               Select Role
-//             </option>
-//             <option value="kids">Kids (0–5)</option>
-//             <option value="teen">Teen (5–15)</option>
-//             <option value="adult">Adult (15+)</option>
-//           </select>
-
-//           <button
-//             type="submit"
-//             className="w-full px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition"
-//           >
-//             Create Account
-//           </button>
-//         </form>
-//         <p className="text-center text-gray-600 mt-4">
-//           Already have an account?{" "}
-//           <a href="/login" className="text-teal-600 hover:underline">
-//             Login
-//           </a>
-//         </p>
-//       </div>
-//     </div>
-//   );
-// }
-import React from "react";
+import React, { useState } from "react";
+import axios from "axios";
 
 export default function SignupPage() {
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    age: "",
+  });
+
+  const [message, setMessage] = useState("");
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      setMessage("Passwords do not match");
+      return;
+    }
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/auth/signup", {
+        full_name: formData.full_name,
+        email: formData.email,
+        password: formData.password,
+        age: parseInt(formData.age, 10),
+      });
+
+      setMessage("Signup successful! Please login.");
+      console.log(response.data);
+    } catch (error) {
+      if (error.response) {
+        setMessage(error.response.data.detail || "Signup failed");
+      } else {
+        setMessage("Network error");
+      }
+    }
+  };
+
   return (
     <div className="w-screen min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EEEEEE] to-[#D4BEE4]">
       {/* Card Container */}
@@ -70,13 +56,17 @@ export default function SignupPage() {
         </h2>
 
         {/* Form */}
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Full Name */}
           <div className="relative">
             <input
               type="text"
+              name="full_name"
               placeholder="Full Name"
+              value={formData.full_name}
+              onChange={handleChange}
               className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9B7EBD] placeholder-gray-400 transition"
+              required
             />
           </div>
 
@@ -84,8 +74,12 @@ export default function SignupPage() {
           <div className="relative">
             <input
               type="email"
+              name="email"
               placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
               className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9B7EBD] placeholder-gray-400 transition"
+              required
             />
           </div>
 
@@ -93,8 +87,12 @@ export default function SignupPage() {
           <div className="relative">
             <input
               type="password"
+              name="password"
               placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
               className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9B7EBD] placeholder-gray-400 transition"
+              required
             />
           </div>
 
@@ -102,8 +100,12 @@ export default function SignupPage() {
           <div className="relative">
             <input
               type="password"
+              name="confirmPassword"
               placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
               className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9B7EBD] placeholder-gray-400 transition"
+              required
             />
           </div>
 
@@ -111,9 +113,13 @@ export default function SignupPage() {
           <div className="relative">
             <input
               type="number"
+              name="age"
               placeholder="Age"
               min="0"
+              value={formData.age}
+              onChange={handleChange}
               className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9B7EBD] placeholder-gray-400 transition"
+              required
             />
           </div>
 
@@ -129,10 +135,18 @@ export default function SignupPage() {
         {/* Footer */}
         <p className="text-center text-gray-500 mt-6">
           Already have an account?{" "}
-          <a href="/login" className="text-[#3B1E54] font-semibold hover:underline">
+          <a
+            href="/login"
+            className="text-[#3B1E54] font-semibold hover:underline"
+          >
             Login
           </a>
         </p>
+
+        {/* Message */}
+        {message && (
+          <p className="text-center mt-4 text-red-500 font-medium">{message}</p>
+        )}
       </div>
     </div>
   );

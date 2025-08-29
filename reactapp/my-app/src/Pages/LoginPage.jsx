@@ -3,39 +3,38 @@ import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-
-  // Mock users database with age instead of role
-  const mockUsers = [
-    { email: "kid@example.com", password: "kid123", age: 4 },
-    { email: "teen@example.com", password: "teen123", age: 12 },
-    { email: "adult@example.com", password: "adult123", age: 25 },
-  ];
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Find user by email and password
-    const user = mockUsers.find(
-      (u) => u.email === email && u.password === password
-    );
+    try {
+      const response = await fetch("http://127.0.0.1:8000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-
-      // Age-based navigation
-      if (user.age >= 0 && user.age <= 5) {
-        navigate("/dashboard/kids");
-      } else if (user.age >= 6 && user.age <= 15) {
-        navigate("/dashboard/teen");
-      } else {
-        navigate("/dashboard/adult");
+      if (!response.ok) {
+        throw new Error("Invalid email or password");
       }
-    } else {
-      setError("Invalid email or password.");
+
+      const data = await response.json();
+      localStorage.setItem("token", data.access_token);
+
+      if (data.role === "Kid") {
+        navigate("/dashboard/kids");
+      } else if (data.role === "Teen") {
+        navigate("/dashboard/teen");
+      } else if (data.role === "Adult") {
+        navigate("/dashboard/adult");
+      } else {
+        navigate("/");
+      }
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -74,7 +73,10 @@ export default function LoginPage() {
         </form>
         <p className="text-center text-gray-500 mt-4">
           Don’t have an account?{" "}
-          <a href="/signup" className="text-[#3B1E54] font-semibold hover:underline">
+          <a
+            href="/signup"
+            className="text-[#3B1E54] font-semibold hover:underline"
+          >
             Sign Up
           </a>
         </p>
