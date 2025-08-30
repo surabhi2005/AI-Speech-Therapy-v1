@@ -28,7 +28,7 @@ export default function SignupPage() {
     }
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/auth/signup", {
+      const response = await axios.post("http://127.0.0.1:8001/auth/signup", {
         full_name: formData.full_name,
         email: formData.email,
         password: formData.password,
