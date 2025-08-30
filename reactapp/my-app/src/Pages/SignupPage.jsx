@@ -47,8 +47,9 @@ export default function SignupPage() {
     }
 
     if (field === "password") {
+      // FIXED PASSWORD REGEX
       const passwordRegex =
-        /^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[@$!%?&])[A-Za-z\d@$!%?&]{8,}$/;
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&])[A-Za-z\d@$!%?&]{8,}$/;
       if (!passwordRegex.test(value))
         error =
           "Password must be at least 8 chars, include uppercase, lowercase, number & special character";
