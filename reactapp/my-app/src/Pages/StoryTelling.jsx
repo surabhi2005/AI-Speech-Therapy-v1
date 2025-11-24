@@ -5,20 +5,21 @@ import KidsSidebar from "./KidsSidebar";
 import axios from "axios";
 
 /* === EDIT MARKER START ===
-   Upgrades included in this single-file implementation:
-   - Local history of past readings (localStorage) and simple trends sparkline
-   - "Reading Assistant" mode that highlights words while TTS is speaking (uses onboundary where available)
-   - Micro-animations: simple SVG mouth + waveform synced during playback using score per-word segments when available
-   - Real-time (best-effort) highlighting while recording using Web Speech API interim results (webkitSpeechRecognition)
-   - Post-recording scoring via /score endpoint (backend), stores history and shows accuracy
-   - Clean teen-friendly UI with image background, responsive layout, collapsible advanced JSON
+   Converged with TeenStorytelling:
+   - Improved real-time highlighting (similarity + listening state)
+   - Speaker-style SVG animation + waveform bars
+   - Mutual exclusion for recording / assistant playback to avoid audio mixing
+   - Play/Stop toggle for recordings
+   - Local history and sparkline trend
+   - Collapsible advanced JSON
+   - Kid-friendly but consistent UX with TeenStorytelling logic
    === EDIT MARKER END === */
 
-/* API set-up (assumes API similar to your ML backend running at REACT_APP_API_URL) */
+/* API setup */
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 const api = axios.create({ baseURL: API_BASE, timeout: 60000 });
 
-/* --- Helpers: audio conversion utilities (encode WAV / convert to 16k) --- */
+/* Audio conversion helpers (WAV 16k) */
 function writeString(view, offset, string) {
   for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
 }
@@ -88,36 +89,64 @@ async function convertBlobToWav16k(blob) {
   }
 }
 
+/* Text helpers */
 function normalizeText(t = "") {
   return String(t || "").toLowerCase().replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ").trim();
 }
-
 function splitToWords(txt) {
-  // Keep punctuation token adjacent but return words array with original text and cleaned text
   const words = txt.split(/\s+/).filter(Boolean);
-  return words.map((w) => ({
-    raw: w,
-    clean: normalizeText(w),
-  }));
+  return words.map((w) => ({ raw: w, clean: normalizeText(w) }));
 }
 
-/* Local Storage keys & helpers */
-const HISTORY_KEY = "story_reading_history_v1";
-function loadHistory() {
+/* Simple levenshtein & similarity to avoid false positives */
+function levenshtein(a = "", b = "") {
+  a = String(a);
+  b = String(b);
+  if (a === b) return 0;
+  const al = a.length;
+  const bl = b.length;
+  if (al === 0) return bl;
+  if (bl === 0) return al;
+  const matrix = Array.from({ length: bl + 1 }, (_, i) => new Array(al + 1).fill(0));
+  for (let i = 0; i <= bl; i++) matrix[i][0] = i;
+  for (let j = 0; j <= al; j++) matrix[0][j] = j;
+  for (let i = 1; i <= bl; i++) {
+    for (let j = 1; j <= al; j++) {
+      const cost = a[j - 1] === b[i - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[bl][al];
+}
+function similarity(a = "", b = "") {
+  a = String(a);
+  b = String(b);
+  const max = Math.max(a.length, b.length, 1);
+  const dist = levenshtein(a, b);
+  return 1 - dist / max;
+}
+
+/* Local storage keys */
+const HISTORY_KEY = "kids_story_history_v1";
+const loadHistory = () => {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
-}
-function saveHistory(hist) {
+};
+const saveHistory = (arr) => {
   try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, 50)));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, 60)));
   } catch {}
-}
+};
 
-/* Simple spinner component */
+/* Small UI atoms */
 const Spinner = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" className="animate-spin" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.12)" strokeWidth="4" />
@@ -125,7 +154,24 @@ const Spinner = ({ size = 18 }) => (
   </svg>
 );
 
-/* Stories data - can be expanded later */
+const Sparkline = ({ data = [], w = 140, h = 36 }) => {
+  if (!data.length) return <div className="text-xs text-gray-400">No trend</div>;
+  const vals = data.map((d) => d.accuracy || 0);
+  const max = Math.max(...vals, 100);
+  const min = Math.min(...vals, 0);
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1 || 1)) * (w - 6) + 3;
+    const y = (1 - (v - min) / Math.max(1, max - min)) * (h - 6) + 3;
+    return `${x},${y}`;
+  });
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <polyline points={pts.join(" ")} fill="none" stroke="#7c5fb3" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+};
+
+/* Stories (kid-friendly) */
 const STORIES = [
   {
     id: "brave-rabbit",
@@ -153,175 +199,165 @@ const STORIES = [
   },
 ];
 
-/* Main Component */
+/* Main component */
 export default function Storytelling() {
-  const [step, setStep] = useState("intro"); // intro, story, feedback, assistant
+  const [step, setStep] = useState("intro"); // intro | story | assistant
   const [currentIdx, setCurrentIdx] = useState(0);
   const story = STORIES[currentIdx];
 
-  // recording & recognition
-  const [isRecording, setIsRecording] = useState(false);
-  const [isScoring, setIsScoring] = useState(false);
-  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
-  const [isTTSPlaying, setIsTTSPlaying] = useState(false);
-
-  const recognitionRef = useRef(null);
+  // recording & playback refs/states
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const recordedBlobRef = useRef(null);
   const audioPlayerRef = useRef(null);
 
-  // highlighting & real-time feedback
+  const recognitionRef = useRef(null);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isTTSPlaying, setIsTTSPlaying] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
+
+  // highlighting & waveform
   const words = splitToWords(story.content);
-  const [liveWordStatuses, setLiveWordStatuses] = useState(() => words.map(() => "neutral")); // "neutral"|"listening"|"correct"|"incorrect"
-  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [wordStatuses, setWordStatuses] = useState(() => words.map(() => "neutral")); // neutral|listening|correct|incorrect
+  const [playHighlightIdx, setPlayHighlightIdx] = useState(-1);
+  const [waveBars, setWaveBars] = useState([]);
 
   // scoring & history
-  const [scoreResult, setScoreResult] = useState(null); // full backend JSON
-  const [scoreValue, setScoreValue] = useState(null); // numeric % accuracy
+  const [scoreResult, setScoreResult] = useState(null);
+  const [accuracy, setAccuracy] = useState(null);
   const [history, setHistory] = useState(() => loadHistory());
 
-  // waveform data for playback visualization
-  const [waveBars, setWaveBars] = useState([]); // array of numbers 0..1
-  const waveAnimRef = useRef(null);
+  // result popup
+  const [resultOpen, setResultOpen] = useState(false);
 
-  // cleanup on unmount
+  // reset on story change
+  useEffect(() => {
+    setWordStatuses(splitToWords(story.content).map(() => "neutral"));
+    setPlayHighlightIdx(-1);
+    setScoreResult(null);
+    setAccuracy(null);
+    recordedBlobRef.current = null;
+    setWaveBars([]);
+    stopAllAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIdx]);
+
+  // cleanup
   useEffect(() => {
     return () => {
       try {
+        stopAllAudio();
         stopRecognition();
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") mediaRecorderRef.current.stop();
-        if (audioPlayerRef.current) audioPlayerRef.current.pause();
       } catch {}
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    // when story changes, reset word statuses
-    setLiveWordStatuses(splitToWords(story.content).map(() => "neutral"));
-    setHighlightIndex(-1);
-    setScoreResult(null);
-    setScoreValue(null);
-    recordedBlobRef.current = null;
-  }, [currentIdx]); // eslint-disable-line
-
-  /* ----------------------------
-     Real-time speech recognition (interim) to highlight words while recording
-     ---------------------------- */
+  /* Recognition (best-effort): webkitSpeechRecognition or SpeechRecognition */
   function startRecognitionLive() {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      // not available - no real-time highlight
-      return null;
-    }
+    stopRecognition();
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new Rec();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = true;
-
-    recognition.onresult = (ev) => {
-      // combine interim results into string
+    if (!Rec) return null;
+    const rec = new Rec();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
       let interim = "";
       let final = "";
-      for (let i = 0; i < ev.results.length; i++) {
-        if (ev.results[i].isFinal) final += ev.results[i][0].transcript;
-        else interim += ev.results[i][0].transcript;
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript + " ";
+        else interim += e.results[i][0].transcript + " ";
       }
-      const transcript = (final + " " + interim).trim();
-      if (!transcript) return;
-      // Update live highlighting based on transcript by mapping tokens sequentially
-      applyLiveTranscript(transcript);
+      const combined = (final + interim).trim();
+      if (!combined) return;
+      applyLiveHighlight(combined);
     };
-
-    recognition.onerror = (e) => {
-      // console.warn("Recognition error", e);
+    rec.onerror = () => {};
+    rec.onend = () => {
+      // nothing — controlled by stopRecording
     };
-    recognition.onend = () => {
-      // will be restarted by stopRecording handler as needed
-    };
-    recognition.start();
-    recognitionRef.current = recognition;
-    return recognition;
+    rec.start();
+    recognitionRef.current = rec;
+    return rec;
   }
 
   function stopRecognition() {
     try {
-      if (recognitionRef.current) {
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
+      recognitionRef.current?.stop?.();
+      recognitionRef.current = null;
     } catch {}
   }
 
-  function applyLiveTranscript(transcript) {
-    // Map tokens to expected words greedily. This is best-effort approximate highlighting.
+  /* improved live highlight to avoid false green:
+     - greedily align heard tokens to expected words using similarity
+     - mark words as 'correct' when sim >= 0.75
+     - otherwise mark 'listening' (not 'incorrect') so UI won't turn everything green prematurely
+  */
+  function applyLiveHighlight(transcript) {
+    const heard = transcript
+      .split(/\s+/)
+      .map((t) => normalizeText(t))
+      .filter(Boolean);
     const expected = splitToWords(story.content).map((w) => w.clean);
-    const seen = transcript.split(/\s+/).map((t) => normalizeText(t)).filter(Boolean);
-    // For each expected index, if corresponding token equals, mark correct
-    const newStatuses = expected.map(() => "neutral");
-    let si = 0;
-    for (let i = 0; i < expected.length && si < seen.length; i++) {
+    const statuses = expected.map(() => "neutral");
+    let hIdx = 0;
+    for (let i = 0; i < expected.length && hIdx < heard.length; i++) {
       const exp = expected[i];
-      if (!exp) continue;
-      if (seen[si] === exp) {
-        newStatuses[i] = "correct";
-        si++;
+      const got = heard[hIdx];
+      const sim = similarity(exp, got);
+      if (sim >= 0.75) {
+        statuses[i] = "correct";
+        hIdx++;
       } else {
-        // attempt to see if seen[si] contains exp as substring
-        if (seen[si].includes(exp) || exp.includes(seen[si])) {
-          newStatuses[i] = "correct";
-          si++;
-        } else {
-          // leave neutral but mark listening window
-          newStatuses[i] = "listening";
-        }
+        statuses[i] = "listening";
+        // sometimes consume short tokens
+        if (got.length > 2 && similarity(got, exp) < 0.4) hIdx++;
       }
     }
-    setLiveWordStatuses(newStatuses);
+    setWordStatuses(statuses);
   }
 
-  /* ----------------------------
-     Recording with MediaRecorder and posting audio to /score
-     ---------------------------- */
+  /* Recording flow */
   async function startRecording() {
+    // Ensure assistant TTS and playback are stopped to avoid mixing
+    stopAssistant();
+    stopPlayback();
+
     setScoreResult(null);
-    setScoreValue(null);
-    setLiveWordStatuses(splitToWords(story.content).map(() => "neutral"));
+    setAccuracy(null);
+    setWaveBars([]);
+    setWordStatuses(splitToWords(story.content).map(() => "neutral"));
     chunksRef.current = [];
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       alert("Microphone not supported in this browser.");
       return;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      mediaRecorderRef.current.ondataavailable = (ev) => {
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (ev) => {
         if (ev.data && ev.data.size > 0) chunksRef.current.push(ev.data);
       };
-      mediaRecorderRef.current.onstop = async () => {
-        // Create blob and score
-        const rawBlob = new Blob(chunksRef.current, { type: chunksRef.current[0]?.type || "audio/webm" });
-        recordedBlobRef.current = rawBlob;
-        // convert to 16k WAV if possible
-        const wav = await convertBlobToWav16k(rawBlob);
-        await postScore(wav);
-        // stop microphone tracks
+      mr.onstop = async () => {
         try {
           stream.getTracks().forEach((t) => t.stop());
         } catch {}
+        const rawBlob = new Blob(chunksRef.current, { type: chunksRef.current[0]?.type || "audio/webm" });
+        recordedBlobRef.current = rawBlob;
+        const wav = await convertBlobToWav16k(rawBlob);
+        await postScore(wav);
       };
-      mediaRecorderRef.current.start();
+      mr.start();
       startRecognitionLive();
       setIsRecording(true);
     } catch (err) {
-      console.error("startRecording failed:", err);
-      alert("Could not start recording. Check microphone permission.");
+      console.error("startRecording error", err);
+      alert("Could not access microphone. Check permissions.");
     }
   }
 
@@ -331,16 +367,16 @@ export default function Storytelling() {
       setIsRecording(false);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") mediaRecorderRef.current.stop();
     } catch (err) {
-      console.error("stopRecording failed:", err);
+      console.warn("stopRecording", err);
       setIsRecording(false);
     }
   }
 
-  /* Post audio to backend /score and process response for highlighting and history */
+  /* Post to backend /score and process result */
   async function postScore(wavBlob) {
     setIsScoring(true);
     setScoreResult(null);
-    setScoreValue(null);
+    setAccuracy(null);
     try {
       const form = new FormData();
       form.append("expected", story.content);
@@ -348,254 +384,238 @@ export default function Storytelling() {
       const res = await api.post("/score", form, { headers: { "Content-Type": "multipart/form-data" } });
       const result = res.data || {};
       setScoreResult(result);
-      // compute accuracy percentage (if available)
-      const acc = Number(result?.summary?.word_accuracy ?? 0) * 100;
-      setScoreValue(Math.round(acc));
-      // Map per-word segments to highlight words: prefer result.per_word or result.per_word
-      const perWord = result?.per_word || result?.per_word_aligned || result?.words || [];
-      // Build statuses array
-      const statuses = splitToWords(story.content).map(() => "neutral");
-      if (Array.isArray(perWord) && perWord.length > 0) {
-        // perWord items often include .op === 'equal' and expected indices - we match by content best-effort
-        const expectedClean = splitToWords(story.content).map((w) => w.clean);
-        // try matching sequentially
+
+      const acc = Math.round(Number(result?.summary?.word_accuracy ?? 0) * 100);
+      setAccuracy(isNaN(acc) ? null : acc);
+
+      // Build word statuses from per_word if available
+      const per = result?.per_word || result?.per_word_aligned || result?.words || [];
+      const expectedClean = splitToWords(story.content).map((w) => w.clean);
+      const statuses = expectedClean.map(() => "neutral");
+      if (Array.isArray(per) && per.length) {
         let wi = 0;
-        for (let i = 0; i < perWord.length && wi < expectedClean.length; i++) {
-          const pw = perWord[i];
-          const act = normalizeText(pw.actual || pw.word || pw.aligned_word || "");
-          const exp = expectedClean[wi];
-          if (!act) {
-            wi++;
-            continue;
-          }
-          // decide correct based on op/equality or same tokens
-          const correct = pw.op === "equal" || act === exp || exp.includes(act) || act.includes(exp);
-          statuses[wi] = correct ? "correct" : "incorrect";
+        for (let i = 0; i < per.length && wi < expectedClean.length; i++) {
+          const item = per[i];
+          const actual = normalizeText(item.actual || item.word || item.aligned_word || "");
+          const op = item.op || "";
+          const sim = similarity(expectedClean[wi], actual);
+          if (op === "equal" || sim >= 0.75) statuses[wi] = "correct";
+          else if (sim >= 0.4) statuses[wi] = "incorrect";
+          else statuses[wi] = "incorrect";
           wi++;
         }
       } else {
-        // fallback: use overall accuracy
-        if (scoreValue >= 70) {
-          // mark all as correct
+        // fallback: mark according to overall accuracy threshold
+        if (acc >= 75) {
           for (let i = 0; i < statuses.length; i++) statuses[i] = "correct";
+        } else {
+          for (let i = 0; i < statuses.length; i++) statuses[i] = "incorrect";
         }
       }
-      setLiveWordStatuses(statuses);
+      setWordStatuses(statuses);
 
-      // prepare waveform bars from per_word prosody.energy_db_mean or acoustic_score
-      const bars = (perWord || []).map((pw) => {
+      // waveform from prosody/energy if available
+      const bars = (per || []).map((pw) => {
         const energy = pw?.prosody?.energy_db_mean ?? pw?.energy ?? pw?.acoustic_score ?? null;
-        if (energy == null) return Math.random() * 0.6 + 0.1;
-        // energy might be negative dB - normalize heuristically
-        const val = Math.min(1, Math.max(0, (Number(energy) + 60) / 40)); // map -60..-20 -> 0..1
-        return val;
+        if (energy == null) return Math.min(1, 0.2 + Math.random() * 0.6);
+        return Math.min(1, Math.max(0, (Number(energy) + 60) / 40));
       });
-      if (bars.length === 0) {
-        // create placeholder bars
-        for (let i = 0; i < Math.min(12, words.length); i++) bars.push(0.2 + Math.random() * 0.6);
-      }
-      setWaveBars(bars);
+      setWaveBars(bars.length ? bars : Array.from({ length: 12 }, () => 0.2 + Math.random() * 0.6));
 
-      // persist to history
-      const item = {
+      // add to history
+      const entry = {
         id: `${story.id}-${Date.now()}`,
         title: story.title,
         date: new Date().toISOString(),
-        accuracy: Math.round(acc),
-        scoreSummary: result?.summary ?? {},
+        accuracy: Math.round(Number(result?.summary?.word_accuracy ?? 0) * 100),
       };
-      const newHist = [item, ...history].slice(0, 50);
+      const newHist = [entry, ...history].slice(0, 60);
       setHistory(newHist);
       saveHistory(newHist);
+
+      // show result popup briefly
+      setResultOpen(true);
     } catch (err) {
-      console.error("postScore error:", err);
-      alert("Scoring failed. Check server or try again.");
+      console.error("postScore error", err);
+      alert("Scoring failed. Try again.");
     } finally {
       setIsScoring(false);
     }
   }
 
-  /* ----------------------------
-     Playback helpers:
-     - Play recorded audio and sync highlighting with per-word timestamps if available
-     - TTS assistant mode: read via speechSynthesis and use onboundary where available to highlight words
-     ---------------------------- */
-  function playRecording() {
-    if (!recordedBlobRef.current) return;
-    if (isPlayingRecording) {
-      // stop
-      try {
+  /* Playback recorded audio synced with per-word timestamps if available */
+  function stopPlayback() {
+    try {
+      if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
         audioPlayerRef.current.currentTime = 0;
-      } catch {}
-      setIsPlayingRecording(false);
-      setHighlightIndex(-1);
+        audioPlayerRef.current = null;
+      }
+    } catch {}
+    setIsPlaying(false);
+    setPlayHighlightIdx(-1);
+  }
+
+  function playRecording() {
+    if (!recordedBlobRef.current) return;
+    // If playing -> stop
+    if (isPlaying) {
+      stopPlayback();
       return;
     }
+    // Stop other audio sources
+    stopAssistant();
+    stopRecognition();
+    setPlayHighlightIdx(-1);
+
     const url = URL.createObjectURL(recordedBlobRef.current);
     const audio = new Audio(url);
     audioPlayerRef.current = audio;
-    setIsPlayingRecording(true);
-    setHighlightIndex(-1);
+    setIsPlaying(true);
 
-    // create segments from scoreResult per_word if present
-    const perWord = scoreResult?.per_word || scoreResult?.per_word_aligned || [];
-
+    const per = scoreResult?.per_word || scoreResult?.per_word_aligned || [];
     audio.ontimeupdate = () => {
       const t = audio.currentTime;
-      // Find which per_word segment includes t
-      if (Array.isArray(perWord) && perWord.length > 0) {
-        // find index where start <= t < end
+      if (Array.isArray(per) && per.length) {
         let idx = -1;
-        for (let i = 0; i < perWord.length; i++) {
-          const s = Number(perWord[i].start ?? perWord[i].start_time ?? -1);
-          const e = Number(perWord[i].end ?? perWord[i].end_time ?? -1);
-          if (!isNaN(s) && !isNaN(e) && s <= t && t <= e) {
+        for (let i = 0; i < per.length; i++) {
+          const s = Number(per[i].start ?? per[i].start_time ?? -1);
+          const e = Number(per[i].end ?? per[i].end_time ?? -1);
+          if (!isNaN(s) && !isNaN(e) && t >= s && t <= e) {
             idx = i;
             break;
           }
         }
-        if (idx >= 0) {
-          // map idx to visual word index by sequential mapping: we already matched per_word to words in postScore
-          setHighlightIndex(idx);
-        } else {
-          setHighlightIndex(-1);
-        }
+        setPlayHighlightIdx(idx);
       } else {
-        // no segments: animate simple pulsing highlight based on progress
         const total = audio.duration || 1;
         const frac = Math.min(1, t / total);
-        const idx = Math.floor(frac * words.length);
-        setHighlightIndex(idx);
+        setPlayHighlightIdx(Math.floor(frac * words.length));
       }
     };
 
     audio.onended = () => {
-      setIsPlayingRecording(false);
-      setHighlightIndex(-1);
-      URL.revokeObjectURL(url);
+      setIsPlaying(false);
+      setPlayHighlightIdx(-1);
+      try {
+        URL.revokeObjectURL(url);
+      } catch {}
     };
 
     audio.play().catch((e) => {
       console.warn("Playback error", e);
-      setIsPlayingRecording(false);
+      setIsPlaying(false);
     });
   }
 
-  function startAssistantTTS() {
-    // Use speechSynthesis to read story text and highlight words using onboundary
+  /* TTS assistant (paragraph highlighting using onboundary where supported) */
+  const paragraphs = story.content.split(/(?<=\.)\s+/);
+  function startAssistant() {
+    // stop recording / playback to avoid mixing
+    stopRecording();
+    stopPlayback();
     if (!("speechSynthesis" in window)) {
       alert("TTS not supported in this browser.");
       return;
     }
-    const synth = window.speechSynthesis;
-    // stop any previous
-    synth.cancel();
+    window.speechSynthesis.cancel();
     setIsTTSPlaying(true);
-    setHighlightIndex(-1);
-
-    const utter = new SpeechSynthesisUtterance(story.content);
-    utter.lang = "en-US";
-    utter.rate = 1.0;
-    // Build cumulative char positions for words to map charIndex -> wordIndex
-    const cumul = [];
-    let acc = 0;
-    for (let i = 0; i < words.length; i++) {
-      cumul.push({ start: acc, end: acc + words[i].raw.length - 1 });
-      acc += words[i].raw.length + 1; // include single space
-    }
-
-    utter.onboundary = (ev) => {
-      // boundary gives charIndex most of the time (not universally implemented)
-      const charIndex = ev.charIndex ?? null;
-      if (charIndex != null) {
-        // find which word contains charIndex
-        let wi = 0;
-        for (let i = 0; i < cumul.length; i++) {
-          if (charIndex >= cumul[i].start && charIndex <= cumul[i].end) {
-            wi = i;
-            break;
-          }
-        }
-        setHighlightIndex(wi);
-      } else {
-        // fallback: approximate by progress using elapsed time (no timing info)
+    setPlayHighlightIdx(-1);
+    // speak paragraph-by-paragraph
+    const speakPara = (idx) => {
+      if (idx >= paragraphs.length) {
+        setIsTTSPlaying(false);
+        setPlayHighlightIdx(-1);
+        return;
       }
+      const utt = new SpeechSynthesisUtterance(paragraphs[idx]);
+      utt.lang = "en-US";
+      utt.rate = 1.0;
+      // char->word mapping
+      const cumul = [];
+      let acc = 0;
+      const allWords = splitToWords(paragraphs[idx]);
+      allWords.forEach((w) => {
+        cumul.push({ start: acc, end: acc + w.raw.length - 1 });
+        acc += w.raw.length + 1;
+      });
+      utt.onboundary = (ev) => {
+        const ci = ev.charIndex ?? null;
+        if (ci != null) {
+          // approximate location in whole story: we will highlight within whole text by searching word index
+          // For kids simplicity, map by fraction
+          const frac = ci / (paragraphs[idx].length || 1);
+          const globalIdx = Math.floor(frac * words.length);
+          setPlayHighlightIdx(globalIdx);
+        }
+      };
+      utt.onend = () => speakPara(idx + 1);
+      window.speechSynthesis.speak(utt);
     };
-    utter.onend = () => {
-      setIsTTSPlaying(false);
-      setHighlightIndex(-1);
-    };
-    synth.speak(utter);
+    speakPara(0);
   }
 
-  /* render sparkline for history accuracies */
-  function Sparkline({ data = [], width = 160, height = 36 }) {
-    if (!data || data.length === 0) {
-      return <div className="text-xs text-gray-400">No trend yet</div>;
-    }
-    const values = data.map((d) => d.accuracy || 0);
-    const max = Math.max(...values, 100);
-    const min = Math.min(...values, 0);
-    const points = values.map((v, i) => {
-      const x = (i / (values.length - 1 || 1)) * (width - 6) + 3;
-      const y = ((1 - (v - min) / Math.max(1, max - min)) * (height - 6)) + 3;
-      return `${x},${y}`;
-    });
+  function stopAssistant() {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {}
+    setIsTTSPlaying(false);
+    setPlayHighlightIdx(-1);
+  }
+
+  /* Utility: small star component */
+  const Stars = ({ value = 0 }) => {
+    const count = Math.round((Math.max(0, Math.min(100, value)) / 100) * 5);
     return (
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rounded">
-        <polyline fill="none" stroke="#9B7EBD" strokeWidth="2" points={points.join(" ")} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <div className="flex gap-1">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <FaStar key={i} className={i < count ? "text-yellow-400" : "text-gray-300"} />
+        ))}
+      </div>
     );
+  };
+
+  /* Stop everything helper */
+  function stopAllAudio() {
+    stopRecording();
+    stopPlayback();
+    stopAssistant();
   }
 
-  /* small utility to render stars (0..5 scaled from accuracy) */
-  function renderStars(score = 0) {
-    const count = Math.round((score / 100) * 5);
-    const stars = [];
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <FaStar key={i} className={i < count ? "text-yellow-400" : "text-gray-300"} />
-      );
-    }
-    return <div className="flex gap-1">{stars}</div>;
-  }
-
-  /* ----------------------------
-     UI pieces
-     ---------------------------- */
+  /* Render */
   return (
     <div className="flex min-h-screen">
       <KidsSidebar />
 
       <div className="flex-1 relative min-h-screen overflow-hidden">
-        {/* Background */}
+        {/* background */}
         <div
           className="absolute inset-0 bg-cover bg-center [filter:contrast(110%)_saturate(115%)]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(15,10,25,0.12), rgba(15,10,25,0.05)), url("${story.bg}")`,
-          }}
-          aria-hidden
+          style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.14), rgba(255,255,255,0.02)), url("${story.bg}")` }}
         />
-        <div className="relative z-20 flex flex-col lg:flex-row gap-6 p-6">
-          {/* Left — main reading panel */}
+
+        <div className="relative z-20 p-6 flex flex-col lg:flex-row gap-6 min-h-screen">
+          {/* main */}
           <main className="flex-1 max-w-3xl mx-auto lg:mx-0">
             {step === "intro" && (
-              <div className="bg-white/95 rounded-2xl p-8 shadow-lg border border-purple-100 max-w-xl mx-auto text-center">
-                <h1 className="text-4xl font-extrabold text-[#2b1736]">Storytime — Level Up Your Reading</h1>
-                <p className="mt-3 text-gray-600">Pick a story and read aloud. Get accuracy feedback and see trends over time.</p>
-                <div className="mt-8 flex gap-3 justify-center">
+              <div className="bg-white/95 rounded-2xl p-8 shadow-lg border border-purple-100 text-center max-w-xl mx-auto">
+                <h1 className="text-4xl font-extrabold text-[#3B1E54]">Story Time!</h1>
+                <p className="mt-2 text-gray-600">Listen, read aloud, and see how your reading improves.</p>
+                <div className="mt-6 flex justify-center gap-3">
                   <button
-                    onClick={() => { setStep("story"); }}
-                    className="px-6 py-3 rounded-full bg-gradient-to-r from-[#9B7EBD] to-[#6b4a88] text-white font-semibold shadow hover:scale-105 transform transition"
+                    onClick={() => setStep("story")}
+                    className="bg-gradient-to-r from-[#7c5fb3] to-[#5b3a8a] text-white px-6 py-3 rounded-full shadow hover:scale-[1.02] transition inline-flex items-center gap-2"
                   >
-                    Start Reading
+                    <FaPlay /> Start Reading
                   </button>
                   <button
-                    onClick={() => { setStep("assistant"); }}
-                    className="px-6 py-3 rounded-full bg-white border shadow text-[#3b1e34] font-semibold"
+                    onClick={() => {
+                      setStep("assistant");
+                      startAssistant();
+                    }}
+                    className="px-5 py-3 rounded-full bg-white border shadow inline-flex items-center gap-2 text-[#3B1E54]"
                   >
-                    Reading Assistant
+                    <FaVolumeUp /> Listening Assistant
                   </button>
                 </div>
               </div>
@@ -603,44 +623,54 @@ export default function Storytelling() {
 
             {(step === "story" || step === "assistant") && (
               <div className="bg-white/95 rounded-2xl p-6 shadow-lg border border-purple-50">
-                {/* header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="text-6xl">{story.image}</div>
+                    <div className="text-5xl">{story.image}</div>
                     <div>
-                      <h2 className="text-2xl font-bold text-[#2b1736]">{story.title}</h2>
+                      <h2 className="text-2xl font-bold text-[#3B1E54]">{story.title}</h2>
                       <div className="text-xs text-gray-500">{story.content.split(" ").length} words</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => { setCurrentIdx((i) => (i - 1 + STORIES.length) % STORIES.length); }}
-                      className="p-2 bg-white rounded-full shadow"
-                      aria-label="Prev story"
-                    >◀</button>
+                      onClick={() => {
+                        setCurrentIdx((i) => (i - 1 + STORIES.length) % STORIES.length);
+                        stopAllAudio();
+                      }}
+                      className="px-2 py-1 rounded-full bg-white border"
+                      aria-label="Prev"
+                    >
+                      ◀
+                    </button>
                     <button
-                      onClick={() => { setCurrentIdx((i) => (i + 1) % STORIES.length); }}
-                      className="p-2 bg-white rounded-full shadow"
-                      aria-label="Next story"
-                    >▶</button>
+                      onClick={() => {
+                        setCurrentIdx((i) => (i + 1) % STORIES.length);
+                        stopAllAudio();
+                      }}
+                      className="px-2 py-1 rounded-full bg-white border"
+                      aria-label="Next"
+                    >
+                      ▶
+                    </button>
                   </div>
                 </div>
 
-                {/* story text with word highlights */}
-                <div className="mt-6 bg-gradient-to-b from-white to-purple-50 p-5 rounded-xl border border-purple-100">
-                  <p className="text-lg leading-relaxed text-[#2b1736]">
+                <div className="mt-6 bg-gradient-to-b from-white to-[#f8f6ff] p-5 rounded-xl border border-purple-50">
+                  {/* Story text highlighting */}
+                  <p className="text-lg leading-relaxed text-[#3B1E54]">
                     {splitToWords(story.content).map((w, i) => {
-                      const status = liveWordStatuses[i] || "neutral";
-                      const isHighlight = highlightIndex === i;
+                      const status = wordStatuses[i] || "neutral";
+                      const playing = playHighlightIdx === i;
                       const base = "inline-block mr-1 mb-2 px-0.5";
                       const cls =
                         status === "correct"
                           ? "bg-green-100 text-green-800 rounded"
                           : status === "incorrect"
                           ? "bg-red-100 text-red-700 rounded"
-                          : isHighlight
+                          : playing
                           ? "bg-yellow-100 text-yellow-800 rounded"
-                          : "text-[#2b1736]";
+                          : "text-[#3B1E54]";
                       return (
                         <span key={`${w.raw}-${i}`} className={`${base} ${cls}`} style={{ transition: "all .18s" }}>
                           {w.raw}
@@ -649,47 +679,66 @@ export default function Storytelling() {
                     })}
                   </p>
 
-                  {/* waveform / micro mouth */}
+                  {/* waveform and speaker arcs */}
                   <div className="mt-4 flex items-center justify-between gap-4">
-                    {/* waveform bars */}
-                    <div className="flex items-end gap-1 flex-1" style={{ minHeight: 42 }}>
-                      {waveBars.length > 0 ? (
-                        waveBars.map((v, idx) => (
-                          <div key={idx} style={{
-                            width: `${Math.max(4, 100 / waveBars.length - 2)}%`,
+                    <div className="flex items-end gap-1 flex-1 min-h-[48px]">
+                      {(waveBars.length ? waveBars : Array.from({ length: 12 }, (_, i) => 0.25 + (i % 3) * 0.12)).map((v, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            width: `${Math.max(4, 100 / (waveBars.length || 12) - 2)}%`,
                             height: `${Math.round(v * 100)}%`,
-                            background: idx === highlightIndex ? "linear-gradient(180deg,#ffd36b,#ffb84d)" : "#e6dff0",
+                            background: idx === playHighlightIdx ? "linear-gradient(180deg,#ffd36b,#ffb84d)" : "#e6dff0",
                             borderRadius: 4,
-                            transition: "height 120ms linear",
-                          }} />
-                        ))
-                      ) : (
-                        // placeholder animated bars while recording or idle
-                        Array.from({ length: 12 }).map((_, i) => (
-                          <div key={i} style={{
-                            width: `${Math.max(4, 100 / 12 - 2)}%`,
-                            height: `${20 + (i % 4) * 12}%`,
-                            background: "#efe6fb",
-                            borderRadius: 4,
-                            opacity: 0.9,
-                          }} />
-                        ))
-                      )}
+                            transition: "height 120ms linear, background 200ms",
+                          }}
+                        />
+                      ))}
                     </div>
 
-                    {/* mouth svg */}
-                    <div style={{ width: 72, height: 48 }}>
-                      <svg viewBox="0 0 72 48" width="72" height="48" aria-hidden>
-                        <rect x="0" y="0" width="72" height="48" rx="8" fill="rgba(255,255,255,0.4)" />
-                        {/* mouth: simple animated ellipse that opens when speaking */}
-                        <ellipse cx="36" cy="26" rx="20" ry={isRecording || isPlayingRecording || isTTSPlaying ? 9 + (highlightIndex % 3) * 2 : 6} fill="#6b4a88" />
-                        <ellipse cx="36" cy="26" rx="14" ry={isRecording || isPlayingRecording || isTTSPlaying ? 6 + (highlightIndex % 2) * 1.5 : 4} fill="#fff" opacity="0.18" />
+                    <div style={{ width: 84, height: 52 }}>
+                      <svg viewBox="0 0 84 52" width="84" height="52" aria-hidden>
+                        <defs>
+                          <linearGradient id="kidG" x1="0" x2="1">
+                            <stop offset="0%" stopColor="#ffd36b" />
+                            <stop offset="100%" stopColor="#ffb84d" />
+                          </linearGradient>
+                        </defs>
+                        <rect x="0" y="0" width="84" height="52" rx="10" fill="rgba(255,255,255,0.6)" />
+                        <g transform="translate(12,14)">
+                          <rect x="0" y="6" width="18" height="18" rx="3" fill="#9B7EBD" opacity="0.95" />
+                          <polygon points="18,6 30,0 30,30 18,24" fill="#9B7EBD" opacity="0.95" />
+                          {[0, 1, 2].map((a) => {
+                            const active = isRecording || isPlaying || isTTSPlaying;
+                            const factor = active ? 1 + a * 0.12 : 0.6 + a * 0.05;
+                            const stroke = a === 0 ? "url(#kidG)" : "#d7cbe8";
+                            const widthArc = 24 + a * 8;
+                            return (
+                              <path
+                                key={a}
+                                d={`
+                                  M ${36 + a * 0.5} 12
+                                  C ${36 + widthArc * 0.3} ${12 - 8 * factor}, ${36 + widthArc * 0.6} ${12 - 8 * factor}, ${
+                                  36 + widthArc
+                                } 12
+                                `}
+                                stroke={stroke}
+                                strokeWidth={2}
+                                fill="none"
+                                strokeLinecap="round"
+                                opacity={active ? 1 - a * 0.12 : 0.35}
+                              />
+                            );
+                          })}
+                        </g>
                       </svg>
                     </div>
 
                     <div className="flex gap-2">
-                      <div className="text-xs text-gray-500">Live</div>
-                      <div className="text-sm font-semibold text-[#6b4a88]">{isRecording ? "Recording" : isPlayingRecording ? "Playing" : isTTSPlaying ? "Listening" : "Idle"}</div>
+                      <div className="text-xs text-gray-500">Status</div>
+                      <div className="text-sm font-semibold text-[#9B7EBD]">
+                        {isRecording ? "Recording" : isPlaying ? "Playing" : isTTSPlaying ? "Assistant" : "Idle"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -698,14 +747,18 @@ export default function Storytelling() {
                 <div className="mt-5 flex gap-3 flex-wrap items-center">
                   {!isRecording ? (
                     <button
-                      onClick={startRecording}
-                      className="px-4 py-2 rounded-full bg-gradient-to-r from-[#9B7EBD] to-[#6b4a88] text-white inline-flex items-center gap-2"
+                      onClick={() => {
+                        stopAssistant();
+                        stopPlayback();
+                        startRecording();
+                      }}
+                      className="px-4 py-2 rounded-full bg-gradient-to-r from-[#7c5fb3] to-[#5b3a8a] text-white inline-flex items-center gap-2"
                     >
                       <FaMicrophone /> Record
                     </button>
                   ) : (
                     <button
-                      onClick={stopRecording}
+                      onClick={() => stopRecording()}
                       className="px-4 py-2 rounded-full bg-red-500 text-white inline-flex items-center gap-2"
                     >
                       <FaStop /> Stop
@@ -714,21 +767,23 @@ export default function Storytelling() {
 
                   <button
                     onClick={() => {
-                      if (recordedBlobRef.current) playRecording();
+                      if (!recordedBlobRef.current) return;
+                      playRecording();
                     }}
                     disabled={!recordedBlobRef.current}
-                    className="px-3 py-2 rounded-full bg-white border text-[#2b1736] inline-flex items-center gap-2"
+                    className="px-3 py-2 rounded-full bg-white border text-[#3B1E54] inline-flex items-center gap-2 disabled:opacity-60"
                   >
-                    <FaPlay /> Play Recording
+                    {isPlaying ? <><FaStop /> Stop</> : <><FaPlay /> Play Recording</>}
                   </button>
 
                   <button
                     onClick={() => {
-                      // start assistant TTS
-                      startAssistantTTS();
+                      stopRecording();
+                      stopPlayback();
+                      startAssistant();
                       setStep("assistant");
                     }}
-                    className="px-3 py-2 rounded-full bg-white border text-[#2b1736] inline-flex items-center gap-2"
+                    className="px-3 py-2 rounded-full bg-white border text-[#3B1E54] inline-flex items-center gap-2"
                   >
                     <FaVolumeUp /> Reading Assistant
                   </button>
@@ -736,29 +791,28 @@ export default function Storytelling() {
                   {isScoring && <div className="ml-2"><Spinner /></div>}
                 </div>
 
-                {/* scoring / accuracy display */}
+                {/* scoring display */}
                 <div className="mt-4 flex items-center gap-4 justify-between flex-wrap">
                   <div>
-                    <div className="text-xs text-gray-500">Latest accuracy</div>
-                    <div className="text-lg font-bold text-[#2b1736]">{scoreValue != null ? `${scoreValue}%` : "—"}</div>
+                    <div className="text-xs text-gray-500">Latest Accuracy</div>
+                    <div className="text-lg font-bold text-[#3B1E54]">{accuracy != null ? `${accuracy}%` : "—"}</div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="text-xs text-gray-500">Quick rating</div>
-                    <div>{renderStars(scoreValue ?? 0)}</div>
+                    <div><Stars value={accuracy ?? 0} /></div>
                   </div>
 
                   <div className="text-right">
                     <div className="text-xs text-gray-500">History</div>
-                    <div className="text-sm text-[#6b4a88]">{history.length} readings</div>
+                    <div className="text-sm text-[#9B7EBD]">{history.length} readings</div>
                   </div>
                 </div>
 
-                {/* advanced JSON preview (collapsible) */}
                 <div className="mt-4">
                   <details>
                     <summary className="cursor-pointer text-xs text-gray-500">Advanced (raw server result)</summary>
-                    <pre style={{ whiteSpace: "pre-wrap", maxHeight: 240, overflow: "auto", background: "#f7f7fb", padding: 8, marginTop: 8, borderRadius: 6 }}>
+                    <pre style={{ whiteSpace: "pre-wrap", maxHeight: 240, overflow: "auto", background: "#fbfbff", padding: 8, marginTop: 8, borderRadius: 6 }}>
                       {scoreResult ? JSON.stringify(scoreResult, null, 2) : "No server result yet."}
                     </pre>
                   </details>
@@ -766,65 +820,78 @@ export default function Storytelling() {
               </div>
             )}
 
-            {step === "feedback" && (
-              <div className="bg-white/95 rounded-2xl p-6 shadow-lg border border-purple-100">
-                <h3 className="text-2xl font-bold text-[#2b1736]">Reading Summary</h3>
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-purple-50 p-4 rounded">
-                    <div className="text-xs text-gray-500">Accuracy</div>
-                    <div className="text-xl font-bold text-[#2b1736]">{scoreValue ?? "—"}%</div>
+            {/* result popup */}
+            {resultOpen && (
+              <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-black/40">
+                <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-lg text-center">
+                  <div className="text-4xl mb-2">🎉</div>
+                  <h3 className="text-2xl font-bold text-[#3B1E54]">Nice reading!</h3>
+                  <div className="mt-3 flex items-center justify-center gap-3">
+                    <div className="text-3xl font-extrabold text-[#3B1E54]">{accuracy != null ? `${accuracy}%` : "—"}</div>
+                    <Stars value={accuracy ?? 0} />
                   </div>
-                  <div className="bg-purple-50 p-4 rounded">
-                    <div className="text-xs text-gray-500">Words</div>
-                    <div className="text-xl font-bold text-[#2b1736]">{words.length}</div>
+                  <p className="mt-2 text-gray-600 text-sm">Your accuracy from the last round.</p>
+                  <div className= "mt-5 grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setResultOpen(false);
+                        if (recordedBlobRef.current) playRecording();
+                      }}
+                      className="px-4 py-2 rounded-full bg-white border text-[#2b1736] inline-flex items-center justify-center gap-2"
+                    >
+                      <FaPlay /> Replay
+                    </button>
+                    <button
+                      onClick={() => {
+                        setResultOpen(false);
+                        setCurrentIdx((i) => (i + 1) % STORIES.length);
+                        setStep("story");
+                      }}
+                      className="px-4 py-2 rounded-full bg-gradient-to-r from-[#7c5fb3] to-[#5b3a8a] text-white"
+                    >
+                      Next Story
+                    </button>
                   </div>
-                  <div className="bg-purple-50 p-4 rounded">
-                    <div className="text-xs text-gray-500">Date</div>
-                    <div className="text-xl font-bold text-[#2b1736]">{new Date().toLocaleString()}</div>
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <button onClick={() => setStep("story")} className="px-4 py-2 rounded-full bg-gradient-to-r from-[#9B7EBD] to-[#6b4a88] text-white">Continue</button>
+                  <button onClick={() => setResultOpen(false)} className="mt-3 text-xs text-gray-500 underline">Close</button>
                 </div>
               </div>
             )}
           </main>
 
-          {/* Right — sidebar with history & trends */}
-          <aside className="w-full lg:w-96">
+          {/* right sidebar */}
+          <aside className="w-full lg:w-96 self-start">
             <div className="bg-white/95 rounded-2xl p-4 shadow-lg border border-purple-50 sticky top-6">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-xs text-gray-500">Reading History</div>
-                  <div className="text-lg font-semibold text-[#2b1736]">{history.length} entries</div>
+                  <div className="text-lg font-semibold text-[#3B1E54]">{history.length} entries</div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-gray-500">Trend</div>
-                  <Sparkline data={history.slice(0, 8).reverse()} />
+                  <Sparkline data={history.slice(0, 10).reverse()} />
                 </div>
               </div>
 
-              <div className="space-y-3 max-h-64 overflow-auto">
+              <div className="space-y-2 max-h-64 overflow-auto">
                 {history.length === 0 ? (
-                  <div className="text-sm text-gray-500">No readings yet. Try a round!</div>
+                  <div className="text-sm text-gray-500">No readings yet — try reading a story!</div>
                 ) : (
                   history.slice(0, 12).map((h) => (
                     <div key={h.id} className="p-2 rounded-md bg-gray-50 flex items-center justify-between">
                       <div style={{ minWidth: 0 }}>
-                        <div className="text-sm font-semibold text-[#2b1736] truncate">{h.title}</div>
+                        <div className="text-sm font-semibold text-[#3B1E54] truncate">{h.title}</div>
                         <div className="text-xs text-gray-500">{new Date(h.date).toLocaleString()}</div>
                       </div>
                       <div className="text-right ml-3">
-                        <div className="text-sm font-bold text-[#6b4a88]">{h.accuracy}%</div>
-                        <div className="text-xs text-gray-400">acc</div>
+                        <div className="text-sm font-bold text-[#9B7EBD]">{h.accuracy}%</div>
+                        <div className="text-[10px] text-gray-400">acc</div>
                       </div>
                     </div>
                   ))
                 )}
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 flex items-center justify-between">
                 <button
                   onClick={() => {
                     if (!window.confirm("Clear reading history?")) return;
@@ -835,23 +902,24 @@ export default function Storytelling() {
                 >
                   Clear history
                 </button>
+                <button onClick={() => setStep("story")} className="text-xs px-3 py-1 rounded-full bg-purple-50 text-[#3B1E54] border">
+                  Go to Story
+                </button>
               </div>
             </div>
 
-            {/* Quick tips */}
             <div className="mt-4 bg-white/95 rounded-2xl p-4 shadow-lg border border-purple-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-[#2b1736]">Tips for great reading</div>
-                  <div className="text-xs text-gray-500">Short & focused practice sessions work best.</div>
+                  <div className="text-sm font-semibold text-[#3B1E54]">Tips for reading</div>
+                  <div className="text-xs text-gray-500">Short sessions beat long marathons.</div>
                 </div>
-                <div className="text-xl">📖</div>
+                <div className="text-xl">📚</div>
               </div>
-
-              <ul className="mt-3 text-sm text-[#2b1736] space-y-2">
-                <li>• Read slowly and clearly at first.</li>
-                <li>• Focus on tricky words and repeat them.</li>
-                <li>• Use the assistant to hear ideal pacing.</li>
+              <ul className="mt-3 text-sm text-[#3B1E54] space-y-2">
+                <li>• Start slow and focus on clarity.</li>
+                <li>• Repeat tricky sentences out loud.</li>
+                <li>• Use the assistant to learn pacing.</li>
               </ul>
             </div>
           </aside>
